@@ -28,4 +28,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return true if user exists, false otherwise
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Finds a user by Google account ID.
+     *
+     * @param googleId Google subject ID
+     * @return Optional containing user if found
+     */
+    Optional<User> findByGoogleId(String googleId);
 }

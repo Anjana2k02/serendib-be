@@ -51,6 +51,9 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private Boolean credentialsNonExpired = true;
 
+    @Column(unique = true)
+    private String googleId;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
