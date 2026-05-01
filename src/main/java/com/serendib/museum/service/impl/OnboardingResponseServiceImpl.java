@@ -4,11 +4,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.serendib.museum.dto.OnboardingRequestDTO;
 import com.serendib.museum.dto.OnboardingResponseDTO;
+import com.serendib.museum.entity.Category;
 import com.serendib.museum.entity.OnboardingResponse;
 import com.serendib.museum.entity.User;
+import com.serendib.museum.entity.UserType;
 import com.serendib.museum.exception.ResourceNotFoundException;
+import com.serendib.museum.repository.CategoryRepository;
 import com.serendib.museum.repository.OnboardingResponseRepository;
 import com.serendib.museum.repository.UserRepository;
+import com.serendib.museum.repository.UserTypeRepository;
 import com.serendib.museum.service.OnboardingResponseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of OnboardingResponseService
@@ -29,6 +35,8 @@ public class OnboardingResponseServiceImpl implements OnboardingResponseService 
 
     private final OnboardingResponseRepository onboardingResponseRepository;
     private final UserRepository userRepository;
+    private final UserTypeRepository userTypeRepository;
+    private final CategoryRepository categoryRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -53,11 +61,21 @@ public class OnboardingResponseServiceImpl implements OnboardingResponseService 
                         .user(user)
                         .build());
 
+        // Resolve UserType
+        UserType userType = userTypeRepository.findByName(requestDTO.getUserType())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user type: " + requestDTO.getUserType()));
+
+        // Resolve Categories (Interests)
+        Set<Category> categories = requestDTO.getInterests().stream()
+                .map(interest -> categoryRepository.findByName(interest)
+                        .orElseThrow(() -> new IllegalArgumentException("Invalid interest category: " + interest)))
+                .collect(Collectors.toSet());
+
         // Update response fields
         response.setVisitorType(requestDTO.getVisitorType());
         response.setCountry(requestDTO.getCountry());
-        response.setUserType(requestDTO.getUserType());
-        response.setInterests(convertInterestsToJson(requestDTO.getInterests()));
+        response.setUserType(userType);
+        response.setInterests(categories);
         response.setTimePreference(requestDTO.getTimePreference());
         response.setLanguagePreference(requestDTO.getLanguagePreference());
 
@@ -99,43 +117,21 @@ public class OnboardingResponseServiceImpl implements OnboardingResponseService 
     }
 
     /**
-     * Convert interests list to JSON string
-     */
-    private String convertInterestsToJson(List<String> interests) {
-        try {
-            return objectMapper.writeValueAsString(interests);
-        } catch (JsonProcessingException e) {
-            log.error("Error converting interests to JSON", e);
-            throw new RuntimeException("Failed to process interests data", e);
-        }
-    }
-
-    /**
-     * Convert JSON string to interests list
-     */
-    private List<String> convertJsonToInterests(String interestsJson) {
-        try {
-            if (interestsJson == null || interestsJson.trim().isEmpty()) {
-                return Collections.emptyList();
-            }
-            return Arrays.asList(objectMapper.readValue(interestsJson, String[].class));
-        } catch (JsonProcessingException e) {
-            log.error("Error converting JSON to interests", e);
-            return Collections.emptyList();
-        }
-    }
-
-    /**
      * Map entity to DTO
      */
     private OnboardingResponseDTO mapToDTO(OnboardingResponse response) {
+        List<String> interestsList = response.getInterests() != null ?
+                response.getInterests().stream()
+                        .map(Category::getName)
+                        .collect(Collectors.toList()) : Collections.emptyList();
+
         return OnboardingResponseDTO.builder()
                 .id(response.getId())
                 .userId(response.getUser().getId())
                 .visitorType(response.getVisitorType())
                 .country(response.getCountry())
-                .userType(response.getUserType())
-                .interests(convertJsonToInterests(response.getInterests()))
+                .userType(response.getUserType().getName())
+                .interests(interestsList)
                 .timePreference(response.getTimePreference())
                 .languagePreference(response.getLanguagePreference())
                 .createdAt(response.getCreatedAt())
