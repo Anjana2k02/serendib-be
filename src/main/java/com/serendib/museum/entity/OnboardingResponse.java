@@ -10,6 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 /**
  * Entity representing user's onboarding survey responses
@@ -47,16 +48,22 @@ public class OnboardingResponse {
     private String country;
 
     /**
-     * Question 2: User type - Student, Teacher, Professor, etc.
+     * Question 2: User type - linked via UserType entity
      */
-    @Column(name = "user_type", nullable = false, length = 50)
-    private String userType;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_type_id", nullable = false)
+    private UserType userType;
 
     /**
-     * Question 3: Interests (multi-select) - stored as JSON array
+     * Question 3: Interests (multi-select) - linked via Category entities
      */
-    @Column(name = "interests", columnDefinition = "TEXT")
-    private String interests; // Stored as JSON string
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "onboarding_response_categories",
+        joinColumns = @JoinColumn(name = "response_id"),
+        inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private Set<Category> interests;
 
     /**
      * Question 4: Time preference
