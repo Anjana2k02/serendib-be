@@ -166,4 +166,53 @@ public class AuthenticationController {
         AuthenticationResponse response = authenticationService.authenticateWithGoogle(request);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Refreshes an expired access token using a valid refresh token.
+     *
+     * @param authHeader Authorization header containing "Bearer {refreshToken}"
+     * @return new authentication response with a fresh access token
+     */
+    @PostMapping("/refresh-token")
+    @Operation(
+            summary = "Refresh access token",
+            description = "Exchange a valid refresh token for a new access token. " +
+                         "Send the refresh token in the Authorization header as 'Bearer {refreshToken}'."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "New access token issued successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AuthenticationResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Refresh token is invalid or expired — user must log in again",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            )
+    })
+    public ResponseEntity<?> refreshToken(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(401, "Missing or malformed Authorization header", "/api/v1/auth/refresh-token"));
+        }
+
+        String refreshToken = authHeader.substring(7);
+        AuthenticationResponse response = authenticationService.refreshToken(refreshToken);
+
+        if (response == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(401, "Refresh token is invalid or expired. Please log in again.", "/api/v1/auth/refresh-token"));
+        }
+
+        return ResponseEntity.ok(response);
+    }
 }

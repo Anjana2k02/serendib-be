@@ -15,6 +15,7 @@ import com.serendib.museum.exception.DuplicateResourceException;
 import com.serendib.museum.repository.UserRepository;
 import com.serendib.museum.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,6 +35,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationService {
 
     private final UserRepository userRepository;
@@ -183,6 +185,47 @@ public class AuthenticationService {
                 .tokenType("Bearer")
                 .user(mapToUserResponse(user))
                 .build();
+    }
+
+    /**
+     * Refreshes the access token using a valid refresh token.
+     *
+     * @param refreshToken the refresh token from the client
+     * @return new authentication response with fresh access token, or null if token invalid
+     */
+    @Transactional(readOnly = true)
+    public AuthenticationResponse refreshToken(String refreshToken) {
+        try {
+            String userEmail = jwtService.extractUsername(refreshToken);
+            if (userEmail == null) {
+                log.warn("Refresh token has no subject claim");
+                return null;
+            }
+
+            User user = userRepository.findByEmail(userEmail).orElse(null);
+            if (user == null) {
+                log.warn("User not found for refresh token email: {}", userEmail);
+                return null;
+            }
+
+            if (!jwtService.isTokenValid(refreshToken, user)) {
+                log.warn("Refresh token is invalid or expired for user: {}", userEmail);
+                return null;
+            }
+
+            String newAccessToken = jwtService.generateAccessToken(user);
+            log.info("Issued new access token for user: {}", userEmail);
+
+            return AuthenticationResponse.builder()
+                    .accessToken(newAccessToken)
+                    .refreshToken(refreshToken) // reuse the same refresh token
+                    .tokenType("Bearer")
+                    .user(mapToUserResponse(user))
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to refresh token: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**

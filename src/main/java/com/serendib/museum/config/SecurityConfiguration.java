@@ -55,6 +55,17 @@ public class SecurityConfiguration {
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex
+                        // Return 401 Unauthorized (not 403) when JWT is missing or invalid
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(401);
+                            response.getWriter().write(
+                                    "{\"status\":401,\"message\":\"Unauthorized - Missing or invalid JWT token\",\"path\":\"" +
+                                            request.getRequestURI() + "\"}"
+                            );
+                        })
+                )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
