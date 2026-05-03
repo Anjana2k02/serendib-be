@@ -1,6 +1,5 @@
 package com.serendib.museum.controller;
 
-import com.serendib.museum.dto.request.GoogleAuthRequest;
 import com.serendib.museum.dto.request.LoginRequest;
 import com.serendib.museum.dto.request.RegisterRequest;
 import com.serendib.museum.dto.response.AuthenticationResponse;
@@ -129,45 +128,6 @@ public class AuthenticationController {
     }
 
     /**
-     * Authenticates a user via Google OAuth2 ID token.
-     * Verifies the token with Google, then finds or creates the user account.
-     *
-     * @param request Google auth request containing the ID token from the Flutter client
-     * @return authentication response with JWT tokens
-     */
-    @PostMapping("/google")
-    @Operation(
-            summary = "Authenticate with Google",
-            description = "Authenticates user with a Google ID token obtained from the Flutter client. " +
-                         "Creates a new account if the email is not yet registered. " +
-                         "Returns JWT access and refresh tokens."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Successfully authenticated with Google",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = AuthenticationResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "400",
-                    description = "Invalid or expired Google ID token",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-    public ResponseEntity<AuthenticationResponse> googleAuth(
-            @Valid @RequestBody GoogleAuthRequest request
-    ) {
-        AuthenticationResponse response = authenticationService.authenticateWithGoogle(request);
-        return ResponseEntity.ok(response);
-    }
-
-    /**
      * Refreshes an expired access token using a valid refresh token.
      *
      * @param authHeader Authorization header containing "Bearer {refreshToken}"
@@ -190,7 +150,7 @@ public class AuthenticationController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Refresh token is invalid or expired — user must log in again",
+                    description = "Refresh token is invalid or expired - user must log in again",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class)
