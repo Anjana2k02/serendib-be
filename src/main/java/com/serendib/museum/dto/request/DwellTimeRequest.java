@@ -20,9 +20,9 @@ import lombok.NoArgsConstructor;
 @Schema(description = "Dwell time tracking request - sent when user is standing near an artifact")
 public class DwellTimeRequest {
 
-    @NotNull(message = "Artifact ID is required")
-    @Schema(description = "ID of the artifact the user is standing near", example = "5", required = true)
-    private Long artifactId;
+    @NotNull(message = "Category ID is required")
+    @Schema(description = "ID of the category the user is standing near", example = "5", required = true)
+    private Long categoryId;
 
     @NotBlank(message = "Activity is required")
     @Schema(description = "User activity type (e.g., 'standing', 'walking')", example = "standing", required = true)

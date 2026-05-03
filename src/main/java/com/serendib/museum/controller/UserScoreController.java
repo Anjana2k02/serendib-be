@@ -57,7 +57,7 @@ public class UserScoreController {
     public ResponseEntity<Map<String, Object>> trackDwellTime(
             @Valid @RequestBody DwellTimeRequest requestDTO) {
 
-        log.info("Received dwell time tracking request for artifact ID: {}", requestDTO.getArtifactId());
+        log.info("Received dwell time tracking request for category ID: {}", requestDTO.getCategoryId());
 
         Long userId = getAuthenticatedUserId();
         UserScoreResponse responseDTO = userScoreService.trackDwellTime(userId, requestDTO);

@@ -68,8 +68,8 @@ public class UserScoreServiceImpl implements UserScoreService {
     @Override
     @Transactional
     public UserScoreResponse trackDwellTime(Long userId, DwellTimeRequest requestDTO) {
-        log.info("Tracking dwell time for user ID: {}, artifact ID: {}, activity: {}, duration: {}ms",
-                userId, requestDTO.getArtifactId(), requestDTO.getActivity(), requestDTO.getDurationMs());
+        log.info("Tracking dwell time for user ID: {}, category ID: {}, activity: {}, duration: {}ms",
+                userId, requestDTO.getCategoryId(), requestDTO.getActivity(), requestDTO.getDurationMs());
 
         // Only process 'standing' activity
         if (!"standing".equalsIgnoreCase(requestDTO.getActivity())) {
@@ -81,21 +81,9 @@ public class UserScoreServiceImpl implements UserScoreService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // Find the nearest artifact by ID
-        Artifact artifact = artifactRepository.findById(requestDTO.getArtifactId())
-                .orElseThrow(() -> new ResourceNotFoundException("Artifact", "id", requestDTO.getArtifactId()));
-
-        if (artifact.getDeleted()) {
-            throw new ResourceNotFoundException("Artifact", "id", requestDTO.getArtifactId());
-        }
-
-        // Get the nearest artifact's category (stored as a String in Artifact entity)
-        String artifactCategoryName = artifact.getCategory();
-
-        // Resolve the Category entity by name to get the category ID
-        Category category = categoryRepository.findByName(artifactCategoryName)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Category not found for artifact category name: " + artifactCategoryName));
+        // Find the category by ID
+        Category category = categoryRepository.findById(requestDTO.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category", "id", requestDTO.getCategoryId()));
 
         // Find or create the UserScore record for this user + nearest category ID
         UserScore userScore = userScoreRepository.findByUserIdAndCategoryId(userId, category.getId())
